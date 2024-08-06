@@ -46,6 +46,10 @@ my @input = ();
 parse_fasta_file($input_fh, \%input, \@input);
 
 my $output_fh = write_file($output);
+use Data::Dumper;
+foreach (keys(%input)) {
+    print $_,"\n";
+}
 
 if ($ranking_order eq "by_list") {    
     foreach my $id (@list) {
@@ -122,7 +126,7 @@ sub parse_fasta_file {
         } elsif (/^\s*#/) {
             next;
         } elsif (/^>(.*)/) {
-            $seq_name = $1;
+            ($seq_name) = split /\s/, $1;
             push @$input_arrayref, $seq_name;
             $$input_hashref{$seq_name} = "";
         } else {

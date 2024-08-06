@@ -9,14 +9,20 @@ use Getopt::Long;
 #  last edited: 2018.10.03
 #  description: translate cds sequences into protein sequences
 #  example: perl cds2protein.pl -i input.cds.fa(.gz) -t 1 -p prefix
-#  See this link (https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi) for the genetic code table options. Only "1" and "3" are supported so far. 
+#  See this link (https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi) for the genetic code table options. Only "1" and "3" are supported so far.
+# The version supported already 32 code tables, however, they were generated for EACH codon.
+# Modified for speed by Michael Dondrup (@mdondrup) This code should be about 30X-100X faster
 ##############################################################
+
+## There is no need to support different code tables in one run
 
 my ($input, $genetic_code_table, $prefix);
 $genetic_code_table = 1;
 GetOptions('input|i:s' => \$input, # input file
 	   'genetic_code_table|t:s' => \$genetic_code_table, # "1" for the standard code and "3" for the yeast mitochondrial code.
 	   'prefix|p:s' => \$prefix); # file name prefix for output files
+
+my %genetic_code = make_code_table($genetic_code_table); ## global variable
 
 my $input_fh = read_file($input);
 my @input = ();
@@ -33,7 +39,7 @@ my $pseudogene_output = "$prefix.manual_check.list";
 my $pseudogene_output_fh = write_file($pseudogene_output);
 
 foreach my $id (@input) {
-    # print "id = $id\n";
+    print STDERR "id = $id\n";
     my @pseudogene_test = ();
     my $cds = uc $input{$id};
     $cds =~ tr/U/T/;
@@ -140,10 +146,9 @@ sub translate {
     return $protein;
 }
 
+sub make_code_table{
+    my ($genetic_code_table) = @_;
 
-sub codon2aa {
-    my ($genetic_code_table, $codon) = @_;
-    $codon = uc $codon;
     my %genetic_code = ();
     %{$genetic_code{"1"}} = (
 	'TCA' => 'S',    # Serine
@@ -237,7 +242,11 @@ sub codon2aa {
 	'TRA' => '*',    # Stop
 	'---' => '-'     # alignment gap
 	);
-    for (my $i = 2; $i <= 31; $i++) {
+    
+    if ($genetic_code_table > 1) { ### don't need to go through generating ALL CODE tables
+	## for each codon, this is very slow
+	my $i = $genetic_code_table;
+	#for (my $i = 2; $i <= 31; $i++) {
 	%{$genetic_code{$i}} =  %{$genetic_code{"1"}};
 	if ($i eq "2") {
 	    $genetic_code{$i}{'AGA'} = '*'; # Stop
@@ -330,14 +339,16 @@ sub codon2aa {
 	    $genetic_code{$i}{'TAR'} = 'E'; # Glutamic Acid
 	} elsif ($i eq "31") {
 	    $genetic_code{$i}{'TGA'} = 'W'; # Tryptophan
+	} else {
+	    die "Unsupported genetic code: $i";
 	}
+	
     }
-    
-    if (exists $genetic_code{$genetic_code_table}{$codon}) {
-        return $genetic_code{$genetic_code_table}{$codon};
-    } else {
-	#print STDERR "Bad codon \"$codon\"!!\n";
-	return 'X';
-    }
+    return %genetic_code;
+}
+
+sub codon2aa {  
+    my ($genetic_code_table, $codon) = @_;
+    return  $genetic_code{$genetic_code_table}{(uc $codon)} || 'X'; 
 }
 
