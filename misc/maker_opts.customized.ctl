@@ -23,7 +23,7 @@ protein=$LRSDAY_HOME/data/Proteome_DB_for_annotation.CDhit_I95.fa  #protein sequ
 protein_gff=  #aligned protein homology evidence from an external GFF3 file
 
 #-----Repeat Masking (leave values blank to skip repeat masking)
-model_org=all #select a model organism for RepBase masking in RepeatMasker
+model_org=saccharomyces #select a model organism for RepBase masking in RepeatMasker
 rmlib= #provide an organism specific repeat library in fasta format for RepeatMasker
 repeat_protein=$LRSDAY_HOME/data/te_proteins.fasta #provide a fasta file of transposable element proteins for RepeatRunner
 rm_gff= #pre-identified repeat elements from an external GFF3 file
